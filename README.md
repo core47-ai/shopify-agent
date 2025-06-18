@@ -1,2 +1,1 @@
-# shopify-agent
-shopify agent
+# Shopify COD in Making
