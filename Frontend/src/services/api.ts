@@ -726,7 +726,7 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(orderIds),
+      body: JSON.stringify({ orders: orderIds }),
     });
   }
 
@@ -736,7 +736,7 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(orderIds),
+      body: JSON.stringify({ orders: orderIds }),
     });
   }
 
@@ -746,7 +746,7 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(orderIds),
+      body: JSON.stringify({ orders: orderIds }),
     });
   }
 
@@ -756,7 +756,7 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(orderIds),
+      body: JSON.stringify({ orders: orderIds }),
     });
   }
 
@@ -766,7 +766,7 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(orderIds),
+      body: JSON.stringify({ orders: orderIds }),
     });
   }
 }

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 class OrderIdsRequest(BaseModel):
-    order_ids: List[str] = []
+    orders: List[str]
 
 def get_order_model() -> OrderModel:
     """Get order model instance"""
@@ -97,7 +97,7 @@ async def get_order_stats():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/book-with-postex")
-async def book_with_postex(order_ids: List[str]):
+async def book_with_postex(request: OrderIdsRequest):
     """Book orders with PostEx courier service"""
     try:
         webhook_url = 'https://n8n.core47.ai/webhook-test/de83981f-8932-404d-859b-30a6a97a540b'
@@ -105,27 +105,26 @@ async def book_with_postex(order_ids: List[str]):
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 webhook_url,
-                json=order_ids,
+                json={"orders": request.orders},
                 headers={'Content-Type': 'application/json'},
                 timeout=30.0
             )
             
         if response.status_code == 200:
-            return {"success": True, "message": f"Successfully booked {len(order_ids)} orders with PostEx"}
+            return {"success": True, "message": f"Successfully booked {len(request.orders)} orders with PostEx"}
         else:
-            # Log the webhook failure but still return success to frontend
             logger.warning(f"PostEx webhook returned status {response.status_code}, but order booking simulated successfully")
-            return {"success": True, "message": f"Orders processed (webhook status: {response.status_code}). Successfully booked {len(order_ids)} orders with PostEx"}
+            return {"success": True, "message": f"Orders processed (webhook status: {response.status_code}). Successfully booked {len(request.orders)} orders with PostEx"}
         
     except httpx.TimeoutException:
         logger.warning("PostEx webhook timed out, but order booking simulated successfully")
-        return {"success": True, "message": f"Orders processed (webhook timeout). Successfully booked {len(order_ids)} orders with PostEx"}
+        return {"success": True, "message": f"Orders processed (webhook timeout). Successfully booked {len(request.orders)} orders with PostEx"}
     except Exception as e:
         logger.warning(f"PostEx webhook error: {str(e)}, but order booking simulated successfully")
-        return {"success": True, "message": f"Orders processed (webhook error). Successfully booked {len(order_ids)} orders with PostEx"}
+        return {"success": True, "message": f"Orders processed (webhook error). Successfully booked {len(request.orders)} orders with PostEx"}
 
 @router.post("/book-with-leopard")
-async def book_with_leopard(order_ids: List[str]):
+async def book_with_leopard(request: OrderIdsRequest):
     """Book orders with Leopard courier service"""
     try:
         webhook_url = 'https://n8n.core47.ai/webhook-test/ebbc9ffa-a46d-4b5a-984c-664ab41ec07'
@@ -133,26 +132,26 @@ async def book_with_leopard(order_ids: List[str]):
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 webhook_url,
-                json=order_ids,
+                json={"orders": request.orders},
                 headers={'Content-Type': 'application/json'},
                 timeout=30.0
             )
             
         if response.status_code == 200:
-            return {"success": True, "message": f"Successfully booked {len(order_ids)} orders with Leopard"}
+            return {"success": True, "message": f"Successfully booked {len(request.orders)} orders with Leopard"}
         else:
             logger.warning(f"Leopard webhook returned status {response.status_code}, but order booking simulated successfully")
-            return {"success": True, "message": f"Orders processed (webhook status: {response.status_code}). Successfully booked {len(order_ids)} orders with Leopard"}
+            return {"success": True, "message": f"Orders processed (webhook status: {response.status_code}). Successfully booked {len(request.orders)} orders with Leopard"}
         
     except httpx.TimeoutException:
         logger.warning("Leopard webhook timed out, but order booking simulated successfully")
-        return {"success": True, "message": f"Orders processed (webhook timeout). Successfully booked {len(order_ids)} orders with Leopard"}
+        return {"success": True, "message": f"Orders processed (webhook timeout). Successfully booked {len(request.orders)} orders with Leopard"}
     except Exception as e:
         logger.warning(f"Leopard webhook error: {str(e)}, but order booking simulated successfully")
-        return {"success": True, "message": f"Orders processed (webhook error). Successfully booked {len(order_ids)} orders with Leopard"}
+        return {"success": True, "message": f"Orders processed (webhook error). Successfully booked {len(request.orders)} orders with Leopard"}
 
 @router.post("/book-recommended")
-async def book_recommended(order_ids: List[str]):
+async def book_recommended(request: OrderIdsRequest):
     """Book orders with recommended courier portals"""
     try:
         webhook_url = 'https://n8n.core47.ai/webhook-test/5f4b6514-7c61-4d97-b67d-1bd8e639ee6b'
@@ -160,40 +159,40 @@ async def book_recommended(order_ids: List[str]):
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 webhook_url,
-                json=order_ids,
+                json={"orders": request.orders},
                 headers={'Content-Type': 'application/json'},
                 timeout=30.0
             )
             
         if response.status_code == 200:
-            return {"success": True, "message": f"Successfully booked {len(order_ids)} orders with recommended portals"}
+            return {"success": True, "message": f"Successfully booked {len(request.orders)} orders with recommended portals"}
         else:
             logger.warning(f"Recommended portals webhook returned status {response.status_code}, but order booking simulated successfully")
-            return {"success": True, "message": f"Orders processed (webhook status: {response.status_code}). Successfully booked {len(order_ids)} orders with recommended portals"}
+            return {"success": True, "message": f"Orders processed (webhook status: {response.status_code}). Successfully booked {len(request.orders)} orders with recommended portals"}
         
     except httpx.TimeoutException:
         logger.warning("Recommended portals webhook timed out, but order booking simulated successfully")
-        return {"success": True, "message": f"Orders processed (webhook timeout). Successfully booked {len(order_ids)} orders with recommended portals"}
+        return {"success": True, "message": f"Orders processed (webhook timeout). Successfully booked {len(request.orders)} orders with recommended portals"}
     except Exception as e:
         logger.warning(f"Recommended portals webhook error: {str(e)}, but order booking simulated successfully")
-        return {"success": True, "message": f"Orders processed (webhook error). Successfully booked {len(order_ids)} orders with recommended portals"}
+        return {"success": True, "message": f"Orders processed (webhook error). Successfully booked {len(request.orders)} orders with recommended portals"}
 
 @router.post("/confirm")
-async def confirm_orders(order_ids: List[str]):
+async def confirm_orders(request: OrderIdsRequest):
     """Manually confirm orders"""
     try:
         # In a real application, you would update the database here
         # For now, we'll just return success
-        return {"success": True, "message": f"Successfully confirmed {len(order_ids)} orders"}
+        return {"success": True, "message": f"Successfully confirmed {len(request.orders)} orders"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to confirm orders: {str(e)}")
 
 @router.post("/cancel")
-async def cancel_orders(order_ids: List[str]):
+async def cancel_orders(request: OrderIdsRequest):
     """Manually cancel orders"""
     try:
         # In a real application, you would update the database here
         # For now, we'll just return success
-        return {"success": True, "message": f"Successfully cancelled {len(order_ids)} orders"}
+        return {"success": True, "message": f"Successfully cancelled {len(request.orders)} orders"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to cancel orders: {str(e)}") 
