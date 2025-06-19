@@ -3,7 +3,7 @@ import {
   Card, 
   CardContent
 } from "@/components/ui/card";
-import { ChevronDown, ChevronRight, Filter, Check, X, CheckSquare, Square, Edit2, Save, XCircle, Package } from "lucide-react";
+import { ChevronDown, ChevronRight, Filter, Check, X, CheckSquare, Square, Edit2, Save, XCircle, Package, AlertTriangle, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface OrderConfirmationGridProps {
   statusFilter?: string;
+  dataType?: "orders" | "fake_orders" | "address_verification";
   onOrderUpdate?: () => void;
 }
 
@@ -26,10 +27,10 @@ interface FilterState {
   deliveryStatus: string;
 }
 
-export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: OrderConfirmationGridProps) {
+export function OrderConfirmationGrid({ statusFilter = "all", dataType = "orders", onOrderUpdate }: OrderConfirmationGridProps) {
   const { toast } = useToast();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
@@ -50,39 +51,311 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
     deliveryStatus: ""
   });
 
+  // Mock address verification data
+  const mockAddressVerificationData = [
+    {
+      id: "addr_001",
+      customer: "Ahmad Khan",
+      customer_name: "Ahmad Khan",
+      customer_phone: "+92 300 1234567",
+      customer_address: "House 123, Street 4, Sector Z, Lahore",
+      customer_email: "ahmad.khan@email.com",
+      total_price: 2500,
+      status: "incomplete",
+      address_status: "incomplete",
+      date: "2025-05-22",
+      created_date: "2025-05-22",
+      product_name: "Premium Collection Item",
+      product_quantity: 2,
+      delivery_status: "pending",
+      assigned_courier: "Not Assigned",
+      tracking: "ADDR-001",
+      tracking_id: "ADDR-001",
+      order_id: "addr_001",
+      verification_notes: "Missing area/locality information",
+      children: []
+    },
+    {
+      id: "addr_002", 
+      customer: "Sara Ali",
+      customer_name: "Sara Ali",
+      customer_phone: "+92 321 9876543",
+      customer_address: "Apartment 45, Building Name Missing, Karachi",
+      customer_email: "sara.ali@email.com",
+      total_price: 1800,
+      status: "waiting",
+      address_status: "waiting",
+      date: "2025-05-22",
+      created_date: "2025-05-22",
+      product_name: "Fashion Essentials",
+      product_quantity: 1,
+      delivery_status: "pending",
+      assigned_courier: "Not Assigned",
+      tracking: "ADDR-002",
+      tracking_id: "ADDR-002",
+      order_id: "addr_002",
+      verification_notes: "Customer contacted for complete address",
+      children: [
+        {
+          type: "SMS Sent",
+          content: "Address verification request sent",
+          status: "sent",
+          timestamp: "2025-05-22 10:30 AM"
+        }
+      ]
+    },
+    {
+      id: "addr_003",
+      customer: "Fatima Ahmed", 
+      customer_name: "Fatima Ahmed",
+      customer_phone: "+92 333 4567890",
+      customer_address: "Block B, DHA Phase 5, Islamabad - Complete Address Received",
+      customer_email: "fatima.ahmed@email.com",
+      total_price: 3200,
+      status: "received",
+      address_status: "received",
+      date: "2025-05-21",
+      created_date: "2025-05-21",
+      product_name: "Luxury Items",
+      product_quantity: 3,
+      delivery_status: "pending",
+      assigned_courier: "Not Assigned",
+      tracking: "ADDR-003",
+      tracking_id: "ADDR-003",
+      order_id: "addr_003",
+      verification_notes: "Customer provided complete address with landmarks",
+      children: [
+        {
+          type: "Customer Response",
+          content: "Complete address: Block B, House #45, DHA Phase 5, Near Main Market, Islamabad",
+          status: "responded",
+          timestamp: "2025-05-21 3:45 PM"
+        }
+      ]
+    },
+    {
+      id: "addr_004",
+      customer: "Zain Khan",
+      customer_name: "Zain Khan", 
+      customer_phone: "+92 345 1234567",
+      customer_address: "Shop 12, Complex unclear, Lahore",
+      customer_email: "zain.khan@email.com",
+      total_price: 1500,
+      status: "manual_review",
+      address_status: "manual_review",
+      date: "2025-05-20",
+      created_date: "2025-05-20",
+      product_name: "Standard Package",
+      product_quantity: 1,
+      delivery_status: "pending",
+      assigned_courier: "Not Assigned",
+      tracking: "ADDR-004",
+      tracking_id: "ADDR-004",
+      order_id: "addr_004",
+      verification_notes: "Conflicting address information requires manual review",
+      children: [
+        {
+          type: "Address Issue",
+          content: "Customer provided two different addresses in conversation",
+          status: "flagged",
+          timestamp: "2025-05-20 2:15 PM"
+        }
+      ]
+    },
+    {
+      id: "addr_005",
+      customer: "Ayesha Malik",
+      customer_name: "Ayesha Malik",
+      customer_phone: "+92 300 9876543",
+      customer_address: "F-10, House unclear, Islamabad",
+      customer_email: "ayesha.malik@email.com",
+      total_price: 2200,
+      status: "incomplete",
+      address_status: "incomplete",
+      date: "2025-05-22",
+      created_date: "2025-05-22",
+      product_name: "Beauty Products",
+      product_quantity: 2,
+      delivery_status: "pending",
+      assigned_courier: "Not Assigned",
+      tracking: "ADDR-005",
+      tracking_id: "ADDR-005",
+      order_id: "addr_005",
+      verification_notes: "Missing house number and street information",
+      children: []
+    },
+    {
+      id: "addr_006",
+      customer: "Hassan Ali",
+      customer_name: "Hassan Ali",
+      customer_phone: "+92 322 1234567",
+      customer_address: "Block A, Gulshan-e-Iqbal, Karachi - Response Pending",
+      customer_email: "hassan.ali@email.com",
+      total_price: 1900,
+      status: "waiting",
+      address_status: "waiting",
+      date: "2025-05-21",
+      created_date: "2025-05-21",
+      product_name: "Electronics",
+      product_quantity: 1,
+      delivery_status: "pending",
+      assigned_courier: "Not Assigned",
+      tracking: "ADDR-006",
+      tracking_id: "ADDR-006",
+      order_id: "addr_006",
+      verification_notes: "Follow-up needed for exact building details",
+      children: [
+        {
+          type: "WhatsApp Sent",
+          content: "Address confirmation request sent via WhatsApp",
+          status: "sent",
+          timestamp: "2025-05-21 2:15 PM"
+        }
+      ]
+    },
+    {
+      id: "addr_007",
+      customer: "Mariam Shah",
+      customer_name: "Mariam Shah",
+      customer_phone: "+92 331 9876543",
+      customer_address: "House #67, Street 12, Model Town, Lahore - Verified Complete",
+      customer_email: "mariam.shah@email.com",
+      total_price: 2800,
+      status: "received",
+      address_status: "received",
+      date: "2025-05-21",
+      created_date: "2025-05-21",
+      product_name: "Home Decor",
+      product_quantity: 4,
+      delivery_status: "pending",
+      assigned_courier: "Not Assigned",
+      tracking: "ADDR-007",
+      tracking_id: "ADDR-007",
+      order_id: "addr_007",
+      verification_notes: "Customer confirmed address with detailed directions",
+      children: [
+        {
+          type: "Phone Call",
+          content: "Customer confirmed complete address over phone",
+          status: "responded",
+          timestamp: "2025-05-21 11:20 AM"
+        },
+        {
+          type: "Address Verified",
+          content: "Complete address: House #67, Street 12, Model Town, Near Main Park, Lahore",
+          status: "verified",
+          timestamp: "2025-05-21 11:25 AM"
+        }
+      ]
+    },
+    {
+      id: "addr_008",
+      customer: "Ali Raza",
+      customer_name: "Ali Raza",
+      customer_phone: "+92 334 5678901",
+      customer_address: "Office Address vs Home Address conflict",
+      customer_email: "ali.raza@email.com",
+      total_price: 3500,
+      status: "manual_review",
+      address_status: "manual_review",
+      date: "2025-05-20",
+      created_date: "2025-05-20",
+      product_name: "Business Equipment",
+      product_quantity: 1,
+      delivery_status: "pending",
+      assigned_courier: "Not Assigned",
+      tracking: "ADDR-008",
+      tracking_id: "ADDR-008",
+      order_id: "addr_008",
+      verification_notes: "Customer provided both office and home address, needs clarification",
+      children: [
+        {
+          type: "Conflicting Info",
+          content: "Customer mentioned office address first, then home address in follow-up",
+          status: "flagged",
+          timestamp: "2025-05-20 4:30 PM"
+        }
+      ]
+    }
+  ];
+
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const fetchedOrders = await apiService.getOrders(statusFilter === "all" ? undefined : statusFilter);
         
-        // Better product names
-        const productNames = [
-          "Salsa Spirit", "Wild Essence", "Million Smiles", "Crimson Charm", "Azure Dreams",
-          "Golden Glow", "Mystic Mist", "Velvet Vibes", "Crystal Clear", "Midnight Magic",
-          "Ruby Rush", "Emerald Elegance", "Diamond Daze", "Silver Shine", "Pearl Paradise"
-        ];
+        let fetchedData: any[] = [];
         
-        // Add mock data for product info and delivery status for demonstration
-        const ordersWithMockData = fetchedOrders.map(order => ({
-          ...order,
-          product_name: order.product_name || productNames[Math.floor(Math.random() * productNames.length)],
-          product_quantity: order.product_quantity || Math.floor(Math.random() * 5) + 1,
-          delivery_status: order.delivery_status || getDeliveryStatusFromTracking(order.tracking, order.status)
-        }));
-        setOrders(ordersWithMockData);
-        setFilteredOrders(ordersWithMockData);
+        if (dataType === "address_verification") {
+          // Filter mock address verification data based on status
+          fetchedData = mockAddressVerificationData.filter(order => {
+            if (statusFilter === "all") return true;
+            return order.address_status === statusFilter;
+          });
+          
+          setOrders(fetchedData);
+          setFilteredOrders(fetchedData);
+        } else if (dataType === "fake_orders") {
+          // Fetch fake orders data
+          fetchedData = await apiService.getFakeOrders(statusFilter === "suspicious" ? undefined : statusFilter);
+          
+          // Transform fake orders to match expected format
+          const transformedData = fetchedData.map(order => ({
+            ...order,
+            customer: order.customer,
+            customer_name: order.customer,
+            customer_phone: order.phone,
+            customer_address: order.address,
+            customer_email: order.email || `${order.customer.toLowerCase().replace(' ', '.')}@email.com`,
+            total_price: order.amount,
+            status: order.suspicious ? "suspicious" : order.status,
+            date: order.date,
+            created_date: order.date,
+            product_name: "Suspicious Order Investigation",
+            product_quantity: 1,
+            delivery_status: "pending",
+            assigned_courier: "Not Assigned",
+            tracking: `FLAG-${order.flag_count || 0}`,
+            tracking_id: `FLAG-${order.flag_count || 0}`,
+            order_id: order.order_id,
+            children: order.messages || []
+          }));
+          
+          setOrders(transformedData);
+          setFilteredOrders(transformedData);
+        } else {
+          // Fetch regular orders data
+          fetchedData = await apiService.getOrders(statusFilter === "all" ? undefined : statusFilter);
+          
+          // Better product names
+          const productNames = [
+            "Salsa Spirit", "Wild Essence", "Million Smiles", "Crimson Charm", "Azure Dreams",
+            "Golden Glow", "Mystic Mist", "Velvet Vibes", "Crystal Clear", "Midnight Magic",
+            "Ruby Rush", "Emerald Elegance", "Diamond Daze", "Silver Shine", "Pearl Paradise"
+          ];
+          
+          // Add mock data for product info and delivery status for demonstration
+          const ordersWithMockData = fetchedData.map(order => ({
+            ...order,
+            product_name: order.product_name || productNames[Math.floor(Math.random() * productNames.length)],
+            product_quantity: order.product_quantity || Math.floor(Math.random() * 5) + 1,
+            delivery_status: order.delivery_status || getDeliveryStatusFromTracking(order.tracking, order.status)
+          }));
+          setOrders(ordersWithMockData);
+          setFilteredOrders(ordersWithMockData);
+        }
+        
       } catch (err) {
-        console.error('Error fetching orders:', err);
-        setError('Failed to fetch orders. Please try again later.');
+        console.error('Error fetching data:', err);
+        setError('Failed to fetch data. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchOrders();
-  }, [statusFilter]);
+    fetchData();
+  }, [statusFilter, dataType]);
 
   // Helper function to determine delivery status based on tracking and order status
   const getDeliveryStatusFromTracking = (tracking?: string, orderStatus?: string): "pending" | "shipped" | "in_transit" | "delivered" | "failed" | "returned" => {
@@ -365,24 +638,40 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
     try {
       console.log('🚀 Manually confirming order:', orderId);
       
-      // Update local state immediately
-      setOrders(prevOrders => 
-        prevOrders.map(order => 
-          order.id === orderId 
-            ? { ...order, status: "confirmed" }
-            : order
-        )
-      );
+      if (dataType === "address_verification") {
+        // Update address verification status to complete
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order.id === orderId 
+              ? { ...order, status: "complete", address_status: "complete" }
+              : order
+          )
+        );
+        toast({
+          title: "Success!",
+          description: `Address verified and marked as complete for order ${orderId}`,
+          duration: 3000,
+        });
+      } else {
+        // Update local state immediately for regular orders
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order.id === orderId 
+              ? { ...order, status: "confirmed" }
+              : order
+          )
+        );
+        toast({
+          title: "Success!",
+          description: `Order ${orderId} confirmed successfully`,
+          duration: 3000,
+        });
+      }
 
       // Call the update callback to refresh stats
       onOrderUpdate?.();
       
       console.log('✅ Order confirmed successfully:', orderId);
-      toast({
-        title: "Success!",
-        description: `Order ${orderId} confirmed successfully`,
-        duration: 3000,
-      });
     } catch (err) {
       console.error('❌ Error updating order status:', err);
       toast({
@@ -398,29 +687,97 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
     try {
       console.log('🚀 Manually cancelling order:', orderId);
       
-      // Update local state immediately
-      setOrders(prevOrders => 
-        prevOrders.map(order => 
-          order.id === orderId 
-            ? { ...order, status: "unconfirmed" }
-            : order
-        )
-      );
+      if (dataType === "address_verification") {
+        // Update address verification status to incomplete
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order.id === orderId 
+              ? { ...order, status: "incomplete", address_status: "incomplete" }
+              : order
+          )
+        );
+        toast({
+          title: "Success!",
+          description: `Address marked as incomplete for order ${orderId}`,
+          duration: 3000,
+        });
+      } else {
+        // Update local state immediately for regular orders
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order.id === orderId 
+              ? { ...order, status: "unconfirmed" }
+              : order
+          )
+        );
+        toast({
+          title: "Success!",
+          description: `Order ${orderId} cancelled successfully`,
+          duration: 3000,
+        });
+      }
 
       // Call the update callback to refresh stats
       onOrderUpdate?.();
       
       console.log('✅ Order cancelled successfully:', orderId);
-      toast({
-        title: "Success!",
-        description: `Order ${orderId} cancelled successfully`,
-        duration: 3000,
-      });
     } catch (err) {
       console.error('❌ Error updating order status:', err);
       toast({
         title: "Error",
         description: `Failed to cancel order ${orderId}. Please try again.`,
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleSendToManualReview = async (orderId: string) => {
+    try {
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.id === orderId 
+            ? { ...order, status: "manual_review", address_status: "manual_review" }
+            : order
+        )
+      );
+      onOrderUpdate?.();
+      toast({
+        title: "Success!",
+        description: `Order ${orderId} sent to manual review`,
+        duration: 3000,
+      });
+    } catch (err) {
+      console.error('❌ Error sending to manual review:', err);
+      toast({
+        title: "Error",
+        description: `Failed to send order ${orderId} to manual review. Please try again.`,
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleRequestCustomerResponse = async (orderId: string) => {
+    try {
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.id === orderId 
+            ? { ...order, status: "waiting", address_status: "waiting" }
+            : order
+        )
+      );
+      onOrderUpdate?.();
+      toast({
+        title: "Success!",
+        description: `Customer response requested for order ${orderId}`,
+        duration: 3000,
+      });
+    } catch (err) {
+      console.error('❌ Error requesting customer response:', err);
+      toast({
+        title: "Error",
+        description: `Failed to request customer response for order ${orderId}. Please try again.`,
         variant: "destructive",
         duration: 5000,
       });
@@ -549,6 +906,58 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
     }
   };
 
+  const getRiskLevel = (flagCount: number) => {
+    if (flagCount >= 5) return "Critical";
+    if (flagCount >= 3) return "High";
+    if (flagCount >= 1) return "Medium";
+    return "Low";
+  };
+
+  const getRiskLevelColor = (flagCount: number) => {
+    const level = getRiskLevel(flagCount);
+    switch (level) {
+      case "Critical": return "text-red-500";
+      case "High": return "text-orange-500";
+      case "Medium": return "text-yellow-500";
+      case "Low": return "text-green-500";
+      default: return "text-muted-foreground";
+    }
+  };
+
+  const getAddressStatusColor = (status: string) => {
+    switch (status) {
+      case "complete":
+        return "text-green-400";
+      case "incomplete":
+        return "text-yellow-500";
+      case "waiting":
+        return "text-blue-500";
+      case "received":
+        return "text-green-500";
+      case "manual_review":
+        return "text-orange-500";
+      default:
+        return "text-muted-foreground";
+    }
+  };
+
+  const getAddressStatusLabel = (status: string) => {
+    switch (status) {
+      case "complete":
+        return "Complete & Reliable";
+      case "incomplete":
+        return "Incomplete Address";
+      case "waiting":
+        return "Waiting Response";
+      case "received":
+        return "Response Received";
+      case "manual_review":
+        return "Manual Review";
+      default:
+        return status;
+    }
+  };
+
   const FilterPopover = ({ title, value, onChange, options }: { 
     title: string; 
     value: string; 
@@ -631,6 +1040,31 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
   const uniqueStatuses = [...new Set(orders.map(order => order.status))];
   const uniqueDeliveryStatuses = [...new Set(orders.map(order => order.delivery_status).filter(Boolean))];
 
+  // Helper function to get column headers based on data type
+  const getColumnHeaders = () => {
+    if (dataType === "fake_orders") {
+      return {
+        col3: "Flag Count",
+        col4: "Amount", 
+        col5: "Risk Level"
+      };
+    } else if (dataType === "address_verification") {
+      return {
+        col3: "Verification ID",
+        col4: "Address Status",
+        col5: "Verification Status"
+      };
+    } else {
+      return {
+        col3: "Tracking ID",
+        col4: "Courier",
+        col5: "Delivery Status"
+      };
+    }
+  };
+
+  const headers = getColumnHeaders();
+
   return (
     <div className="space-y-4">
       {/* Selection and Bulk Actions */}
@@ -649,8 +1083,8 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
             <span>Select All ({filteredOrders.length})</span>
           </Button>
           
-          {/* Bulk Action Buttons */}
-          {selectedOrders.size > 0 && (
+          {/* Bulk Action Buttons - Only show for regular orders */}
+          {selectedOrders.size > 0 && dataType === "orders" && (
             <div className="flex items-center space-x-2 flex-wrap">
               <Badge variant="outline" className="bg-cod-purple/20 text-cod-purple">
                 {selectedOrders.size} selected
@@ -709,7 +1143,7 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
           )}
         </div>
         <div className="text-sm text-muted-foreground">
-          Showing {filteredOrders.length} of {orders.length} orders
+          Showing {filteredOrders.length} of {orders.length} {dataType === "fake_orders" ? "suspicious orders" : dataType === "address_verification" ? "address verifications" : "orders"}
         </div>
       </div>
 
@@ -719,7 +1153,7 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
           <span className="text-xs text-muted-foreground">Active filters:</span>
           {filters.trackingId && (
             <Badge variant="outline" className="text-xs">
-              Tracking ID: {filters.trackingId}
+              {headers.col3}: {filters.trackingId}
               <Button
                 variant="ghost"
                 size="sm"
@@ -745,7 +1179,7 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
           )}
           {filters.assignedCourier && (
             <Badge variant="outline" className="text-xs">
-              Courier: {filters.assignedCourier}
+              {headers.col4}: {filters.assignedCourier}
               <Button
                 variant="ghost"
                 size="sm"
@@ -771,7 +1205,7 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
           )}
           {filters.deliveryStatus && (
             <Badge variant="outline" className="text-xs">
-              Delivery Status: {filters.deliveryStatus}
+              {headers.col5}: {filters.deliveryStatus}
               <Button
                 variant="ghost"
                 size="sm"
@@ -809,20 +1243,20 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
                 />
               </div>
               <div className="col-span-2 flex items-center justify-between">
-                <span>Tracking ID</span>
+                <span>{headers.col3}</span>
                 <FilterPopover
-                  title="Tracking ID"
+                  title={headers.col3}
                   value={filters.trackingId}
                   onChange={(value) => updateFilter('trackingId', value)}
                 />
               </div>
               <div className="col-span-2 flex items-center justify-between">
-                <span>Courier</span>
+                <span>{headers.col4}</span>
                 <FilterPopover
-                  title="Assigned Courier"
+                  title={headers.col4}
                   value={filters.assignedCourier}
                   onChange={(value) => updateFilter('assignedCourier', value)}
-                  options={uniqueCouriers}
+                  options={dataType === "fake_orders" || dataType === "address_verification" ? [] : uniqueCouriers}
                 />
               </div>
               <div className="col-span-1 flex items-center justify-between">
@@ -835,19 +1269,19 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
                 />
               </div>
               <div className="col-span-1 flex items-center justify-between">
-                <span>Delivery</span>
+                <span>{headers.col5}</span>
                 <FilterPopover
-                  title="Delivery Status"
+                  title={headers.col5}
                   value={filters.deliveryStatus}
                   onChange={(value) => updateFilter('deliveryStatus', value)}
-                  options={uniqueDeliveryStatuses}
+                  options={dataType === "fake_orders" ? ["Low", "Medium", "High", "Critical"] : dataType === "address_verification" ? ["Complete", "Incomplete", "Waiting", "Received", "Manual Review"] : uniqueDeliveryStatuses}
                 />
               </div>
             </div>
             
             {filteredOrders.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                {orders.length === 0 ? "No orders available." : "No orders found for the selected filter."}
+                {orders.length === 0 ? `No ${dataType === "fake_orders" ? "suspicious orders" : dataType === "address_verification" ? "address verifications" : "orders"} available.` : `No ${dataType === "fake_orders" ? "suspicious orders" : dataType === "address_verification" ? "address verifications" : "orders"} found for the selected filter.`}
               </div>
             ) : (
               <div className="space-y-1">
@@ -885,11 +1319,21 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
                       </div>
                       <div className="col-span-2 text-xs font-medium cursor-pointer truncate" onClick={() => toggleExpand(order.id)}>{order.customer}</div>
                       <div className="col-span-2 font-medium text-xs cursor-pointer truncate" onClick={() => toggleExpand(order.id)}>{order.id}</div>
-                      <div className="col-span-2 font-medium font-mono text-xs cursor-pointer truncate" onClick={() => toggleExpand(order.id)}>{order.tracking || 'Not assigned'}</div>
+                      <div className="col-span-2 font-medium font-mono text-xs cursor-pointer truncate" onClick={() => toggleExpand(order.id)}>
+                        {dataType === "fake_orders" ? order.tracking : dataType === "address_verification" ? order.tracking : (order.tracking || 'Not assigned')}
+                      </div>
                       <div className="col-span-2 cursor-pointer" onClick={() => toggleExpand(order.id)}>
-                        <Badge variant={getCourierBadgeVariant(order.assigned_courier)} className="text-xs">
-                          {getCourierName(order.assigned_courier)}
-                        </Badge>
+                        {dataType === "fake_orders" ? (
+                          <span className="text-xs font-medium">Rs.{order.total_price || order.amount}</span>
+                        ) : dataType === "address_verification" ? (
+                          <Badge variant="outline" className={cn("status-tag text-xs", getAddressStatusColor(order.address_status))}>
+                            {getAddressStatusLabel(order.address_status)}
+                          </Badge>
+                        ) : (
+                          <Badge variant={getCourierBadgeVariant(order.assigned_courier)} className="text-xs">
+                            {getCourierName(order.assigned_courier)}
+                          </Badge>
+                        )}
                       </div>
                       <div className="col-span-1 cursor-pointer" onClick={() => toggleExpand(order.id)}>
                         <Badge variant="outline" className={cn("status-tag text-xs", getStatusColor(order.status))}>
@@ -897,9 +1341,19 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
                         </Badge>
                       </div>
                       <div className="col-span-1 cursor-pointer" onClick={() => toggleExpand(order.id)}>
-                        <Badge variant="outline" className={cn("status-tag text-xs", getDeliveryStatusColor(order.delivery_status))}>
-                          {order.delivery_status}
-                        </Badge>
+                        {dataType === "fake_orders" ? (
+                          <Badge variant="outline" className={cn("status-tag text-xs", getRiskLevelColor(order.flag_count || 0))}>
+                            {getRiskLevel(order.flag_count || 0)}
+                          </Badge>
+                        ) : dataType === "address_verification" ? (
+                          <Badge variant="outline" className={cn("status-tag text-xs", getAddressStatusColor(order.address_status))}>
+                            {getAddressStatusLabel(order.address_status)}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className={cn("status-tag text-xs", getDeliveryStatusColor(order.delivery_status))}>
+                            {order.delivery_status}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     
@@ -908,7 +1362,9 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
                         {/* Order Details */}
                         <div className="p-4 bg-white/5 border-l-2 border-cod-purple rounded-md">
                           <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-sm font-medium text-cod-purple">Order Details</h4>
+                            <h4 className="text-sm font-medium text-cod-purple">
+                              {dataType === "address_verification" ? "Address Verification Details" : "Order Details"}
+                            </h4>
                             <div className="flex items-center space-x-2">
                               <Button
                                 variant="default"
@@ -917,7 +1373,7 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
                                 onClick={() => handleManualConfirm(order.id)}
                               >
                                 <Check className="mr-1 h-3 w-3" />
-                                Manually Confirm
+                                {dataType === "address_verification" ? "Mark Complete" : "Manually Confirm"}
                               </Button>
                               <Button
                                 variant="default"
@@ -926,8 +1382,30 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
                                 onClick={() => handleManualCancel(order.id)}
                               >
                                 <X className="mr-1 h-3 w-3" />
-                                Manually Cancel
+                                {dataType === "address_verification" ? "Mark Incomplete" : "Manually Cancel"}
                               </Button>
+                              {dataType === "address_verification" && (
+                                <>
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    className="bg-orange-600 hover:bg-orange-700 text-white font-medium shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105 text-xs h-8 px-4"
+                                    onClick={() => handleSendToManualReview(order.id)}
+                                  >
+                                    <AlertTriangle className="mr-1 h-3 w-3" />
+                                    Send to Review
+                                  </Button>
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105 text-xs h-8 px-4"
+                                    onClick={() => handleRequestCustomerResponse(order.id)}
+                                  >
+                                    <MessageSquare className="mr-1 h-3 w-3" />
+                                    Request Response
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -976,6 +1454,12 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
                                 </div>
                               </div>
                             </div>
+                            {dataType === "address_verification" && order.verification_notes && (
+                              <div className="col-span-2">
+                                <span className="text-muted-foreground">Verification Notes:</span>
+                                <span className="ml-2 text-yellow-400">{order.verification_notes}</span>
+                              </div>
+                            )}
                             <div>
                               <span className="text-muted-foreground">Product:</span>
                               <span className="ml-2 font-medium">{order.product_name}</span>
@@ -1003,7 +1487,7 @@ export function OrderConfirmationGrid({ statusFilter = "all", onOrderUpdate }: O
                           </div>
                         </div>
 
-                        {/* Confirmation History */}
+                        {/* Confirmation/Verification History */}
                         {order.children?.map((child: any, index: number) => (
                           <div 
                             key={`${order.id}-child-${index}`}

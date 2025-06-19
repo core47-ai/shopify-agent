@@ -1,12 +1,19 @@
 import { useState, useEffect } from "react";
 import { DashboardNavigation } from "@/components/dashboard/DashboardNavigation";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Settings, Filter, Download, RefreshCw } from "lucide-react";
+import { MessageSquare, Settings, Filter, Download, RefreshCw, AlertTriangle } from "lucide-react";
 import { OrderConfirmationGrid } from "@/components/dashboard/OrderConfirmationGrid";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiService, OrderStats } from "@/services/api";
+import { apiService, OrderStats, FakeOrderStats } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+
+interface AddressVerificationStats {
+  incomplete: number;
+  waiting: number;
+  received: number;
+  manual_review: number;
+}
 
 export default function OrderConfirmationDashboard() {
   const { toast } = useToast();
@@ -17,32 +24,76 @@ export default function OrderConfirmationDashboard() {
     unconfirmed: 0,
     total: 0
   });
+  const [fakeOrderStats, setFakeOrderStats] = useState<FakeOrderStats>({
+    total: 0,
+    new: 0,
+    checking: 0,
+    requires_verification: 0,
+    partial_payment_requested: 0,
+    flagged: 0,
+    blacklisted: 0,
+    processing: 0,
+    completed: 0,
+    canceled: 0,
+    suspicious: 0
+  });
+  const [addressStats, setAddressStats] = useState<AddressVerificationStats>({
+    incomplete: 0,
+    waiting: 0,
+    received: 0,
+    manual_review: 0
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchOrderStats = async () => {
+    const fetchStats = async () => {
       try {
         setLoading(true);
-        const stats = await apiService.getOrderStats();
-        setOrderStats(stats);
+        const [orderStatsData, fakeOrderStatsData] = await Promise.all([
+          apiService.getOrderStats(),
+          apiService.getFakeOrderStats()
+        ]);
+        setOrderStats(orderStatsData);
+        setFakeOrderStats(fakeOrderStatsData);
+        
+        // Mock address verification stats for now - you can replace this with real API call
+        setAddressStats({
+          incomplete: 2, // addr_001, addr_005
+          waiting: 2, // addr_002, addr_006  
+          received: 2, // addr_003, addr_007
+          manual_review: 2 // addr_004, addr_008
+        });
       } catch (error) {
-        console.error('Error fetching order stats:', error);
+        console.error('Error fetching stats:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchOrderStats();
+    fetchStats();
   }, []);
 
   const handleRefresh = () => {
     const fetchStats = async () => {
       try {
-        const stats = await apiService.getOrderStats();
-        setOrderStats(stats);
+        const [orderStatsData, fakeOrderStatsData] = await Promise.all([
+          apiService.getOrderStats(),
+          apiService.getFakeOrderStats()
+        ]);
+        setOrderStats(orderStatsData);
+        setFakeOrderStats(fakeOrderStatsData);
+        
+        // Update address verification stats
+        setAddressStats({
+          incomplete: 2,
+          waiting: 2,
+          received: 2,
+          manual_review: 2
+        });
+        
         toast({
           title: "Data refreshed",
-          description: "Order confirmation data has been refreshed",
+          description: "Order management data has been refreshed",
         });
       } catch (error) {
         console.error('Error refreshing stats:', error);
@@ -59,8 +110,29 @@ export default function OrderConfirmationDashboard() {
   const onOrderUpdate = () => {
     const fetchStats = async () => {
       try {
-        const stats = await apiService.getOrderStats();
-        setOrderStats(stats);
+        const [orderStatsData, fakeOrderStatsData] = await Promise.all([
+          apiService.getOrderStats(),
+          apiService.getFakeOrderStats()
+        ]);
+        setOrderStats(orderStatsData);
+        setFakeOrderStats(fakeOrderStatsData);
+        
+        // Update address verification stats when orders are updated
+        // For demo purposes, simulate some orders moving to address verification
+        setAddressStats(prev => {
+          // When orders are confirmed, some might need address verification
+          const newIncomplete = Math.max(0, prev.incomplete + Math.floor(Math.random() * 2) - 1);
+          const newWaiting = Math.max(0, prev.waiting + Math.floor(Math.random() * 2) - 1);
+          const newReceived = Math.max(0, prev.received + Math.floor(Math.random() * 2) - 1);
+          const newManualReview = Math.max(0, prev.manual_review + Math.floor(Math.random() * 1));
+          
+          return {
+            incomplete: newIncomplete,
+            waiting: newWaiting,
+            received: newReceived,
+            manual_review: newManualReview
+          };
+        });
       } catch (error) {
         console.error('Error refreshing stats:', error);
       }
@@ -122,17 +194,20 @@ export default function OrderConfirmationDashboard() {
                       <TabsTrigger value="unconfirmed" className="rounded-full">
                         Unconfirmed ({loading ? "..." : orderStats.unconfirmed})
                       </TabsTrigger>
+                      <TabsTrigger value="suspicious" className="rounded-full">
+                        Suspicious ({loading ? "..." : fakeOrderStats.suspicious})
+                      </TabsTrigger>
                       <TabsTrigger value="incomplete" className="rounded-full">
-                        Incomplete Address (12)
+                        Incomplete Address ({loading ? "..." : addressStats.incomplete})
                       </TabsTrigger>
                       <TabsTrigger value="waiting" className="rounded-full">
-                        Waiting Response (8)
+                        Waiting Response ({loading ? "..." : addressStats.waiting})
                       </TabsTrigger>
                       <TabsTrigger value="received" className="rounded-full">
-                        Response Received (15)
+                        Response Received ({loading ? "..." : addressStats.received})
                       </TabsTrigger>
                       <TabsTrigger value="manual_review" className="rounded-full">
-                        Manual Review (3)
+                        Manual Review ({loading ? "..." : addressStats.manual_review})
                       </TabsTrigger>
                     </TabsList>
                   </div>
@@ -143,6 +218,7 @@ export default function OrderConfirmationDashboard() {
                   <div className="p-6">
                     <OrderConfirmationGrid 
                       statusFilter="all" 
+                      dataType="orders"
                       onOrderUpdate={onOrderUpdate}
                     />
                   </div>
@@ -153,6 +229,7 @@ export default function OrderConfirmationDashboard() {
                   <div className="p-6">
                     <OrderConfirmationGrid 
                       statusFilter="confirmed" 
+                      dataType="orders"
                       onOrderUpdate={onOrderUpdate}
                     />
                   </div>
@@ -163,6 +240,7 @@ export default function OrderConfirmationDashboard() {
                   <div className="p-6">
                     <OrderConfirmationGrid 
                       statusFilter="pending" 
+                      dataType="orders"
                       onOrderUpdate={onOrderUpdate}
                     />
                   </div>
@@ -173,6 +251,18 @@ export default function OrderConfirmationDashboard() {
                   <div className="p-6">
                     <OrderConfirmationGrid 
                       statusFilter="unconfirmed" 
+                      dataType="orders"
+                      onOrderUpdate={onOrderUpdate}
+                    />
+                  </div>
+                </TabsContent>
+
+                {/* Suspicious Orders Tab */}
+                <TabsContent value="suspicious" className="flex-1 overflow-auto p-0 m-0">
+                  <div className="p-6">
+                    <OrderConfirmationGrid 
+                      statusFilter="suspicious" 
+                      dataType="fake_orders"
                       onOrderUpdate={onOrderUpdate}
                     />
                   </div>
@@ -181,53 +271,41 @@ export default function OrderConfirmationDashboard() {
                 {/* Address Verification Tabs */}
                 <TabsContent value="incomplete" className="flex-1 overflow-auto p-0 m-0">
                   <div className="p-6">
-                    <div className="text-center py-8 text-muted-foreground">
-                      <MessageSquare className="mx-auto h-12 w-12 mb-4 text-cod-purple/50" />
-                      <h3 className="text-lg font-medium mb-2">Incomplete Address Orders</h3>
-                      <p>Orders with incomplete or missing address information</p>
-                      <Button className="mt-4 button-gradient">
-                        View Address Verification
-                      </Button>
-                    </div>
+                    <OrderConfirmationGrid 
+                      statusFilter="incomplete" 
+                      dataType="address_verification"
+                      onOrderUpdate={onOrderUpdate}
+                    />
                   </div>
                 </TabsContent>
 
                 <TabsContent value="waiting" className="flex-1 overflow-auto p-0 m-0">
                   <div className="p-6">
-                    <div className="text-center py-8 text-muted-foreground">
-                      <MessageSquare className="mx-auto h-12 w-12 mb-4 text-cod-purple/50" />
-                      <h3 className="text-lg font-medium mb-2">Waiting for Customer Response</h3>
-                      <p>Orders waiting for customer address confirmation</p>
-                      <Button className="mt-4 button-gradient">
-                        View Address Verification
-                      </Button>
-                    </div>
+                    <OrderConfirmationGrid 
+                      statusFilter="waiting" 
+                      dataType="address_verification"
+                      onOrderUpdate={onOrderUpdate}
+                    />
                   </div>
                 </TabsContent>
 
                 <TabsContent value="received" className="flex-1 overflow-auto p-0 m-0">
                   <div className="p-6">
-                    <div className="text-center py-8 text-muted-foreground">
-                      <MessageSquare className="mx-auto h-12 w-12 mb-4 text-cod-purple/50" />
-                      <h3 className="text-lg font-medium mb-2">Response Received</h3>
-                      <p>Orders with customer address responses ready for review</p>
-                      <Button className="mt-4 button-gradient">
-                        Review Responses
-                      </Button>
-                    </div>
+                    <OrderConfirmationGrid 
+                      statusFilter="received" 
+                      dataType="address_verification"
+                      onOrderUpdate={onOrderUpdate}
+                    />
                   </div>
                 </TabsContent>
 
                 <TabsContent value="manual_review" className="flex-1 overflow-auto p-0 m-0">
                   <div className="p-6">
-                    <div className="text-center py-8 text-muted-foreground">
-                      <MessageSquare className="mx-auto h-12 w-12 mb-4 text-cod-purple/50" />
-                      <h3 className="text-lg font-medium mb-2">Manual Review Required</h3>
-                      <p>Orders requiring manual address verification review</p>
-                      <Button className="mt-4 button-gradient">
-                        Start Manual Review
-                      </Button>
-                    </div>
+                    <OrderConfirmationGrid 
+                      statusFilter="manual_review" 
+                      dataType="address_verification"
+                      onOrderUpdate={onOrderUpdate}
+                    />
                   </div>
                 </TabsContent>
               </Tabs>
