@@ -127,7 +127,7 @@ async def book_with_postex(request: OrderIdsRequest):
 async def book_with_leopard(request: OrderIdsRequest):
     """Book orders with Leopard courier service"""
     try:
-        webhook_url = 'https://n8n.core47.ai/webhook-test/ebbc9ffa-a46d-4b5a-984c-664ab41ec07'
+        webhook_url = 'https://n8n.core47.ai/webhook-test/ebbc9ffa-a46d-4b5a-984c-664ab41ec079'
         
         async with httpx.AsyncClient() as client:
             response = await client.post(
